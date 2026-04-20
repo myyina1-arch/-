@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>會員上傳系統</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%); 
+            margin: 0; 
+            padding: 20px 16px 40px 16px;
+            min-height: 100vh; 
+        }
+        .app-container { 
+            max-width: 900px; 
+            width: 100%; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 40px; 
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35); 
+            overflow: hidden; 
+            min-height: 800px;
+        }
+        .hero-header { background: #1e293b; color: white; padding: 24px 20px; position: relative; }
+        .hero-header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .hero-header p { margin: 6px 0 0; opacity: 0.8; font-size: 0.85rem; }
+        .leader-badge { position: absolute; top: 20px; right: 20px; background: #f97316; border-radius: 40px; padding: 6px 12px; font-size: 0.8rem; font-weight: bold; color: #1e293b; cursor: pointer; border: none; width: auto; }
+        .user-tabs { display: flex; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
+        .user-tab { flex: 1; text-align: center; padding: 14px 8px; font-weight: 600; color: #334155; cursor: pointer; font-size: 0.95rem; }
+        .user-tab.active { background: white; color: #f97316; border-bottom: 3px solid #f97316; }
+        .tab-pane { display: none; padding: 24px 22px; background: white; }
+        .tab-pane.active { display: block; }
+        .form-row { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #0f172a; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; background: #fefefe; }
+        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; }
+        button.secondary { background: #475569; }
+        .message { margin-top: 16px; padding: 12px; border-radius: 40px; text-align: center; font-size: 0.85rem; display: none; }
+        .message.success { background: #dcfce7; color: #15803d; display: block; }
+        .message.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .info-card { background: #fef9e8; border-left: 5px solid #f97316; padding: 14px; border-radius: 24px; margin-bottom: 20px; }
+        .warning-badge { background: #ffedd5; color: #9a3412; padding: 10px; border-radius: 30px; text-align: center; font-weight: bold; margin-bottom: 16px; display: none; }
+        .history-item { font-size: 0.8rem; background: #fff7ed; margin: 6px 0; padding: 8px 12px; border-radius: 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .history-time { font-size: 0.7rem; color: #8d6e63; background: #f0e4c6; padding: 2px 8px; border-radius: 20px; font-family: monospace; }
+        .flex-2col { display: flex; gap: 12px; }
+        .flex-2col > div { flex: 1; }
+        .leader-tabs { display: flex; background: #f1f5f9; gap: 4px; padding: 4px; flex-wrap: wrap; }
+        .leader-tab { flex: 1; text-align: center; padding: 10px 4px; background: #e2e8f0; border-radius: 60px; font-weight: 600; cursor: pointer; font-size: 0.8rem; min-width: 70px; }
+        .leader-tab.active { background: #f97316; color: white; }
+        .modal-overlay { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5); 
+            display: flex; 
+            align-items: flex-start; 
+            justify-content: center; 
+            z-index: 1000; 
+            visibility: hidden; 
+            opacity: 0; 
+            transition: 0.2s;
+            padding-top: 80px;
+        }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-card { 
+            background: white; 
+            border-radius: 48px; 
+            padding: 28px; 
+            width: 300px; 
+            text-align: center; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-card select { width: 100%; padding: 12px; border-radius: 30px; border: 1.5px solid #e2e8f0; font-size: 16px; margin-bottom: 15px; background: #fefefe; }
+        .modal-card input { margin: 20px 0; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 10px; }
+        .modal-buttons button { margin-top: 0; }
+        footer { text-align: center; font-size: 11px; padding: 14px; color: #94a3b8; background: #f8fafc; }
+        .member-table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 20px; }
+        .member-table { width: 100%; min-width: 700px; border-collapse: collapse; background: white; font-size: 13px; }
+        .member-table th { background: #8d6e63; color: white; padding: 12px 8px; text-align: center; }
+        .member-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #eee; }
+        .member-table tr:hover { background: #f5f0e8; }
+        .status-active { color: #2e7d32; font-weight: bold; }
+        .status-stopped { color: #bcaaa4; }
+        @media (max-width: 600px) {
+            body { min-height: 120vh; }
+            .app-container { min-height: 1100px; height: auto; }
+            .tab-pane { min-height: 900px; height: auto; padding: 18px 18px 220px 18px; }
+            .history-item { flex-direction: column; }
+            .leader-tab { font-size: 0.7rem; padding: 8px 2px; }
+            .modal-overlay { padding-top: 60px; }
+            .modal-card { width: 280px; padding: 22px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="hero-header">
+        <h1>📦 會員上傳系統</h1>
+        <p>線上報名成功後專人聯絡</p>
+        <button class="leader-badge" id="openLeaderBtn">🔐 組長專區</button>
+    </div>
+    <div class="user-tabs">
+        <div class="user-tab active" data-tab="upload">📤 上傳數字表</div>
+        <div class="user-tab" data-tab="register">📝 線上報名</div>
+    </div>
+    <div id="uploadPane" class="tab-pane active">
+        <div class="form-row"><label>📋 組別</label><select id="userGroupSelect"><option value="">請選擇組別</option></select></div>
+        <div class="form-row"><label>🔢 會員編號</label><input type="text" id="userMemberNo" placeholder="請輸入會員編號"></div>
+        <div id="userMemberInfo" style="display:none;" class="info-card">
+            <div><strong>📌 會員姓名：</strong> <span id="showMemberName">-</span></div>
+            <div><strong>📊 已上傳次數：</strong> <span id="uploadCountSpan">0</span> / 5</div>
+            <div id="historyArea"></div>
+        </div>
+        <div id="userLimitWarning" class="warning-badge">⚠️ 本月已達5次上傳上限！</div>
+        <div class="form-row"><label>💰 上傳數字</label><input type="number" id="userAmount" placeholder="請輸入數字"></div>
+        <div class="form-row"><label>📝 備註</label><input type="text" id="userRemark" placeholder="備註說明"></div>
+        <button id="userCheckBtn" class="secondary">🔍 查詢</button>
+        <button id="userUploadBtn" disabled>📤 確認上傳</button>
+        <div id="userUploadMsg" class="message"></div>
+    </div>
+    <div id="registerPane" class="tab-pane">
+        <div class="info-card">⚡ 報名成功後，專人將與您聯絡並告知會員編號</div>
+        <div class="form-row"><label>👤 姓名</label><input type="text" id="regName" placeholder="請輸入真實姓名"></div>
+        <div class="flex-2col"><div><label>性別</label><select id="regGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="regAge" placeholder="年齡"></div></div>
+        <div class="form-row"><label>📍 常居地</label><input type="text" id="regCity" placeholder="城市/地區"></div>
+        <div class="flex-2col"><div><label>📞 電話</label><input type="tel" id="regPhone" placeholder="手機號碼"></div><div><label>💬 LINE</label><input type="text" id="regLine" placeholder="LINE ID"></div></div>
+        <div class="form-row"><label>📝 備註</label><textarea id="regRemark" rows="2"></textarea></div>
+        <button id="doRegisterBtn">✅ 確認報名</button>
+        <div id="registerMsg" class="message"></div>
+    </div>
+    <div id="leaderZone" style="display:none;">
+        <div class="leader-tabs">
+            <div class="leader-tab active" data-tab="add">➕ 新增會員</div>
+            <div class="leader-tab" data-tab="edit">✏️ 修改會員</div>
+            <div class="leader-tab" data-tab="list">📋 會員列表</div>
+            <div class="leader-tab" data-tab="upload">📤 上傳專區</div>
+            <div class="leader-tab" data-tab="statsAll">📊 全部組別統計</div>
+            <div class="leader-tab" data-tab="statsDetail">📋 組別詳細統計</div>
+        </div>
+        <div id="addPane" class="tab-pane active">
+            <div class="form-row"><label>組別</label><select id="leaderGroupAdd"><option value="">選擇組別</option></select></div>
+            <div class="form-row"><label>會員編號</label><input type="text" id="leaderMemberNo" placeholder="留空自動產生"></div>
+            <div class="form-row"><label>姓名</label><input type="text" id="leaderName"></div>
+            <div class="flex-2col"><div><label>性別</label><select id="leaderGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="leaderAge"></div></div>
+            <div class="form-row"><label>常居地</label><input type="text" id="leaderLocation"></div>
+            <div class="flex-2col"><div><label>電話</label><input type="text" id="leaderPhone"></div><div><label>LINE</label><input type="text" id="leaderLine"></div></div>
+            <div class="form-row"><label>備註</label><textarea id="leaderRemark" rows="2"></textarea></div>
+            <button id="leaderAddBtn">✅ 確認新增</button>
+            <div id="leaderAddMsg" class="message"></div>
+        </div>
+        <div id="editPane" class="tab-pane">
+            <div class="flex-2col"><div><label>組別</label><select id="editGroupSelect"><option value="">選擇組別</option></select></div><div><label>會員編號</label><input type="text" id="editMemberNo"></div></div>
+            <button id="searchEditBtn" class="secondary">🔍 查詢</button>
+            <div id="editDetail" style="display:none;">
+                <div class="info-card">編輯資料</div>
+                <div class="form-row"><label>姓名</label><input type="text" id="editName"></div>
+                <div class="form-row"><label>組別</label><select id="editGroupNew"><option value="">選擇組別</option></select></div>
+                <div class="flex-2col"><div><label>性別</label><select id="editGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="editAge"></div></div>
+                <div class="form-row"><label>常居地</label><input type="text" id="editLocation"></div>
+                <div class="flex-2col"><div><label>電話</label><input type="text" id="editPhone"></div><div><label>LINE</label><input type="text" id="editLine"></div></div>
+                <div class="form-row"><label>備註</label><textarea id="editRemark" rows="2"></textarea></div>
+                <button id="updateBtn">💾 儲存</button>
+            </div>
+            <div id="editMsg" class="message"></div>
+        </div>
+        <div id="listPane" class="tab-pane">
+            <div class="form-row"><label>選擇組別</label><select id="listGroupSelect"><option value="">請選擇組別</option></select></div>
+            <button id="showListBtn" class="secondary">🔍 顯示會員列表</button>
+            <div id="listResult"></div>
+        </div>
+        <div id="leaderUploadPane" class="tab-pane">
+            <div class="form-row"><label>組別</label><select id="leaderUploadGroup"><option value="">選擇組別</option></select></div>
+            <div class="form-row"><label>會員編號</label><input type="text" id="leaderUploadNo"></div>
+            <div id="uploadMemberCard" style="display:none;" class="info-card">
+                <div><strong>會員：</strong> <span id="uploadTargetName">-</span></div>
+                <div><strong>上傳次數：</strong> <span id="uploadTargetCount">0</span> / 5</div>
+                <div id="uploadHistory"></div>
+            </div>
+            <div class="form-row"><label>上傳數字</label><input type="number" id="leaderUploadAmount"></div>
+            <div class="form-row"><label>備註</label><input type="text" id="leaderUploadRemark"></div>
+            <button id="leaderCheckBtn" class="secondary">🔍 查詢</button>
+            <button id="leaderUploadBtn" disabled>📤 確認上傳</button>
+            <div id="leaderUploadMsg" class="message"></div>
+        </div>
+        <div id="statsAllPane" class="tab-pane">
+            <button id="allStatsBtn" class="secondary" style="margin-bottom:12px;">📊 全部組別統計</button>
+            <div id="statsAllArea" style="margin-top:20px; background:#fef9e8; border-radius:32px; padding:16px;"></div>
+        </div>
+        <div id="statsDetailPane" class="tab-pane">
+            <div class="form-row"><label>選擇組別</label><select id="detailGroupSelect"><option value="">請選擇組別</option></select></div>
+            <button id="detailStatsBtn">📋 組別詳細統計</button>
+            <div id="statsDetailArea" style="margin-top:20px; background:#fef9e8; border-radius:32px; padding:16px;"></div>
+        </div>
+    </div>
+    <div style="height: 30px;"></div>
+    <footer>© 組長專區</footer>
+</div>
+
+<div id="pwdModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>🔐 組長驗證</h3>
+        <input type="password" id="pwdInput" placeholder="請輸入密碼">
+        <div class="modal-buttons">
+            <button id="pwdConfirm">確認</button>
+            <button id="pwdCancel" class="secondary">取消</button>
+        </div>
+        <div id="pwdMsg" class="message"></div>
+    </div>
+</div>
+
+<div id="datePickerModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>📅 選擇年月</h3>
+        <select id="pickerYear"></select>
+        <select id="pickerMonth"></select>
+        <div class="modal-buttons">
+            <button id="pickerConfirm">確認</button>
+            <button id="pickerCancel" class="secondary">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========================================
+    // 🔥 您的 Web App 網址（請改成您的）
+    // ========================================
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxNSy3BW8vEDdeC_5kdacW_9smwLEQ2UwLgUnhyvlA2FszWskxsSVnAaTeIXT2m0oYL/exec';
+    
+    var currentUser = null;
+    var currentLeader = null;
+    var currentEditNo = null;
+    var pendingDatePickerCallback = null;
+    
+    // ========================================
+    // 🔥 通用 API 呼叫函數
+    // ========================================
+    async function callAPI(action, data = {}) {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, ...data })
+        });
+        return await response.json();
+    }
+    
+    function maskName(name) {
+        if (!name) return '';
+        var n = name.trim();
+        if (n.length <= 2) return n;
+        return n.charAt(0) + 'O' + n.charAt(n.length - 1);
+    }
+    
+    function showMsg(id, msg, type) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.className = 'message ' + type;
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(function() { if (el) el.style.display = 'none'; }, 3000);
+        }
+    }
+    
+    function showYearMonthPicker(callback) {
+        var now = new Date();
+        var currentYear = now.getFullYear();
+        var currentMonth = now.getMonth() + 1;
+        var yearSelect = document.getElementById('pickerYear');
+        yearSelect.innerHTML = '';
+        for (var y = 2024; y <= 2028; y++) {
+            var option = document.createElement('option');
+            option.value = y;
+            option.text = y + '年';
+            if (y === currentYear) option.selected = true;
+            yearSelect.appendChild(option);
+        }
+        var monthSelect = document.getElementById('pickerMonth');
+        monthSelect.innerHTML = '';
+        for (var m = 1; m <= 12; m++) {
+            var option = document.createElement('option');
+            option.value = m;
+            option.text = m + '月';
+            if (m === currentMonth) option.selected = true;
+            monthSelect.appendChild(option);
+        }
+        pendingDatePickerCallback = callback;
+        document.getElementById('datePickerModal').classList.add('active');
+    }
+    
+    function closeDatePicker() {
+        document.getElementById('datePickerModal').classList.remove('active');
+        pendingDatePickerCallback = null;
+    }
+    
+    function confirmDatePicker() {
+        var year = parseInt(document.getElementById('pickerYear').value);
+        var month = parseInt(document.getElementById('pickerMonth').value);
+        if (pendingDatePickerCallback) pendingDatePickerCallback(year, month);
+        closeDatePicker();
+    }
+    
+    document.getElementById('pickerConfirm').onclick = confirmDatePicker;
+    document.getElementById('pickerCancel').onclick = closeDatePicker;
+    
+    function showSuccessModal(message) {
+        var existingModal = document.getElementById('customSuccessModal');
+        if (existingModal) existingModal.remove();
+        var modal = document.createElement('div');
+        modal.id = 'customSuccessModal';
+        modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;z-index:10000;padding-top:120px;`;
+        modal.innerHTML = `<div style="background:white;border-radius:48px;padding:32px 28px;width:320px;text-align:center;box-shadow:0 20px 35px -10px rgba(0,0,0,0.3);animation:fadeInUp 0.3s ease;"><div style="font-size:56px;margin-bottom:12px;">🎉</div><h3 style="color:#1e293b;margin-bottom:16px;font-size:24px;">報名成功！</h3><div style="color:#475569;line-height:1.6;margin-bottom:20px;text-align:left;white-space:pre-line;">${message.replace(/\n/g, '<br>')}</div><button id="closeSuccessModalBtn" style="background:#f97316;color:white;border:none;padding:12px 24px;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;width:100%;">我知道了</button></div>`;
+        var style = document.createElement('style');
+        style.textContent = `@keyframes fadeInUp{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}`;
+        document.head.appendChild(style);
+        document.body.appendChild(modal);
+        document.getElementById('closeSuccessModalBtn').onclick = function() { modal.remove(); };
+        modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+    }
+    
+    // ========================================
+    // 🔥 載入組別列表
+    // ========================================
+    async function loadGroups() {
+        try {
+            const groups = await callAPI('getGroupsList');
+            var allGroups = ['全部'].concat(groups);
+            var ids = ['userGroupSelect', 'leaderGroupAdd', 'editGroupSelect', 'editGroupNew', 'leaderUploadGroup', 'detailGroupSelect', 'listGroupSelect'];
+            ids.forEach(function(id) {
+                var sel = document.getElementById(id);
+                if (sel) {
+                    sel.innerHTML = '<option value="">請選擇組別</option>';
+                    allGroups.forEach(function(g) { sel.innerHTML += '<option value="' + g + '">' + g + '</option>'; });
+                }
+            });
+        } catch(e) { console.error('載入組別失敗:', e); }
+    }
+    
+    // ========================================
+    // 🔥 使用者查詢
+    // ========================================
+    document.getElementById('userCheckBtn').onclick = async function() {
+        var group = document.getElementById('userGroupSelect').value;
+        var no = document.getElementById('userMemberNo').value.trim();
+        if (!group) { showMsg('userUploadMsg', '請選擇組別', 'error'); return; }
+        if (!no) { showMsg('userUploadMsg', '請輸入會員編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberInfoForForm', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentUser = r;
+                document.getElementById('userMemberInfo').style.display = 'block';
+                document.getElementById('showMemberName').innerText = maskName(r.name);
+                var cnt = r.uploadInfo.uploadedCount;
+                document.getElementById('uploadCountSpan').innerText = cnt;
+                var html = '<div><strong>📋 歷史上傳 (含時間)：</strong></div>';
+                if (r.uploadInfo.history && r.uploadInfo.history.length) {
+                    for (var i = 0; i < r.uploadInfo.history.length; i++) {
+                        var h = r.uploadInfo.history[i];
+                        var timeStr = h.date ? h.date : '時間未記錄';
+                        html += '<div class="history-item"><span>📌 第 ' + h.number + ' 次：數字 ' + h.amount + '</span><span class="history-time">🕘 ' + timeStr + '</span></div>';
+                    }
+                } else { html += '<div>無紀錄</div>'; }
+                document.getElementById('historyArea').innerHTML = html;
+                var full = cnt >= 5;
+                document.getElementById('userLimitWarning').style.display = full ? 'block' : 'none';
+                document.getElementById('userUploadBtn').disabled = full;
+            } else {
+                document.getElementById('userMemberInfo').style.display = 'none';
+                showMsg('userUploadMsg', r.message, 'error');
+            }
+        } catch(err) { showMsg('userUploadMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    // ========================================
+    // 🔥 使用者上傳
+    // ========================================
+    document.getElementById('userUploadBtn').onclick = async function() {
+        if (!currentUser) { showMsg('userUploadMsg', '請先查詢', 'error'); return; }
+        var amount = parseFloat(document.getElementById('userAmount').value);
+        var remark = document.getElementById('userRemark').value;
+        if (isNaN(amount) || amount <= 0) { showMsg('userUploadMsg', '請輸入有效數字', 'error'); return; }
+        var no = document.getElementById('userMemberNo').value.trim();
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 上傳中...';
+        try {
+            const r = await callAPI('upload', { memberNo: no, memberName: currentUser.name, amount: amount, remark: remark });
+            if (r.success) {
+                showMsg('userUploadMsg', r.message, 'success');
+                document.getElementById('userAmount').value = '';
+                document.getElementById('userRemark').value = '';
+                document.getElementById('userCheckBtn').click();
+            } else { showMsg('userUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('userUploadMsg', '上傳失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // ========================================
+    // 🔥 報名
+    // ========================================
+    document.getElementById('doRegisterBtn').onclick = async function() {
+        var name = document.getElementById('regName').value.trim();
+        if (!name) { showMsg('registerMsg', '請填寫姓名', 'error'); return; }
+        var data = {
+            name: name,
+            gender: document.getElementById('regGender').value,
+            age: parseInt(document.getElementById('regAge').value) || 0,
+            location: document.getElementById('regCity').value,
+            phone: document.getElementById('regPhone').value,
+            line: document.getElementById('regLine').value,
+            remark: document.getElementById('regRemark').value
+        };
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 處理中...';
+        try {
+            const r = await callAPI('register', data);
+            if (r.success) {
+                document.getElementById('regName').value = '';
+                document.getElementById('regAge').value = '';
+                document.getElementById('regCity').value = '';
+                document.getElementById('regPhone').value = '';
+                document.getElementById('regLine').value = '';
+                document.getElementById('regRemark').value = '';
+                showSuccessModal(r.message);
+            } else { showMsg('registerMsg', r.message, 'error'); }
+        } catch(err) { showMsg('registerMsg', '報名失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // ========================================
+    // 🔥 組長登入
+    // ========================================
+    var pwdModal = document.getElementById('pwdModal');
+    document.getElementById('openLeaderBtn').onclick = function() { pwdModal.classList.add('active'); };
+    document.getElementById('pwdCancel').onclick = function() { pwdModal.classList.remove('active'); document.getElementById('pwdInput').value = ''; };
+    document.getElementById('pwdConfirm').onclick = function() {
+        var pwd = document.getElementById('pwdInput').value;
+        if (pwd === '111') {
+            pwdModal.classList.remove('active');
+            document.getElementById('pwdInput').value = '';
+            document.querySelector('.user-tabs').style.display = 'none';
+            document.getElementById('uploadPane').style.display = 'none';
+            document.getElementById('registerPane').style.display = 'none';
+            document.getElementById('leaderZone').style.display = 'block';
+            document.querySelector('.hero-header h1').innerText = '👥 組長專區';
+            loadGroups();
+        } else { showMsg('pwdMsg', '密碼錯誤', 'error'); }
+    };
+    
+    // ========================================
+    // 🔥 組長頁籤
+    // ========================================
+    var tabs = document.querySelectorAll('.leader-tab');
+    var panes = { add: 'addPane', edit: 'editPane', list: 'listPane', upload: 'leaderUploadPane', statsAll: 'statsAllPane', statsDetail: 'statsDetailPane' };
+    tabs.forEach(function(t) {
+        t.onclick = function() {
+            tabs.forEach(function(tt) { tt.classList.remove('active'); });
+            t.classList.add('active');
+            var target = t.getAttribute('data-tab');
+            for (var p in panes) { var pane = document.getElementById(panes[p]); if (pane) pane.classList.remove('active'); }
+            var targetPane = document.getElementById(panes[target]);
+            if (targetPane) targetPane.classList.add('active');
+        };
+    });
+    
+    // ========================================
+    // 🔥 組長新增會員
+    // ========================================
+    document.getElementById('leaderAddBtn').onclick = async function() {
+        var data = {
+            group: document.getElementById('leaderGroupAdd').value,
+            memberNo: document.getElementById('leaderMemberNo').value.trim(),
+            name: document.getElementById('leaderName').value.trim(),
+            gender: document.getElementById('leaderGender').value,
+            age: parseInt(document.getElementById('leaderAge').value) || 0,
+            location: document.getElementById('leaderLocation').value,
+            phone: document.getElementById('leaderPhone').value,
+            line: document.getElementById('leaderLine').value,
+            remark: document.getElementById('leaderRemark').value
+        };
+        if (!data.group) { showMsg('leaderAddMsg', '請選擇組別', 'error'); return; }
+        if (!data.name) { showMsg('leaderAddMsg', '請輸入姓名', 'error'); return; }
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 處理中...';
+        try {
+            const r = await callAPI('addLeaderMember', data);
+            if (r.success) {
+                document.getElementById('leaderMemberNo').value = '';
+                document.getElementById('leaderName').value = '';
+                document.getElementById('leaderAge').value = '';
+                document.getElementById('leaderLocation').value = '';
+                document.getElementById('leaderPhone').value = '';
+                document.getElementById('leaderLine').value = '';
+                document.getElementById('leaderRemark').value = '';
+                showSuccessModal(r.message);
+            } else { showMsg('leaderAddMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderAddMsg', '新增失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // ========================================
+    // 🔥 查詢修改
+    // ========================================
+    document.getElementById('searchEditBtn').onclick = async function() {
+        var group = document.getElementById('editGroupSelect').value;
+        var no = document.getElementById('editMemberNo').value.trim();
+        if (!group || !no) { showMsg('editMsg', '請選擇組別並輸入編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberDetail', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentEditNo = no;
+                document.getElementById('editDetail').style.display = 'block';
+                document.getElementById('editName').value = r.name;
+                document.getElementById('editGroupNew').value = r.group;
+                document.getElementById('editGender').value = r.gender || '男';
+                document.getElementById('editAge').value = r.age || '';
+                document.getElementById('editLocation').value = r.location || '';
+                document.getElementById('editPhone').value = r.phone || '';
+                document.getElementById('editLine').value = r.line || '';
+                document.getElementById('editRemark').value = r.remark || '';
+            } else { showMsg('editMsg', r.message, 'error'); }
+        } catch(err) { showMsg('editMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    // ========================================
+    // 🔥 儲存修改
+    // ========================================
+    document.getElementById('updateBtn').onclick = async function() {
+        if (!currentEditNo) { showMsg('editMsg', '請先查詢', 'error'); return; }
+        var data = {
+            memberNo: currentEditNo,
+            name: document.getElementById('editName').value.trim(),
+            group: document.getElementById('editGroupNew').value,
+            gender: document.getElementById('editGender').value,
+            age: parseInt(document.getElementById('editAge').value) || 0,
+            location: document.getElementById('editLocation').value,
+            phone: document.getElementById('editPhone').value,
+            line: document.getElementById('editLine').value,
+            remark: document.getElementById('editRemark').value
+        };
+        if (!data.name) { showMsg('editMsg', '姓名不可為空', 'error'); return; }
+        try {
+            const r = await callAPI('updateMember', data);
+            if (r.success) {
+                showMsg('editMsg', r.message, 'success');
+                document.getElementById('editDetail').style.display = 'none';
+                document.getElementById('editMemberNo').value = '';
+                currentEditNo = null;
+            } else { showMsg('editMsg', r.message, 'error'); }
+        } catch(err) { showMsg('editMsg', '儲存失敗：' + err.message, 'error'); }
+    };
+    
+    // ========================================
+    // 🔥 會員列表
+    // ========================================
+    document.getElementById('showListBtn').onclick = async function() {
+        var group = document.getElementById('listGroupSelect').value;
+        if (!group) { showMsg('listResult', '請選擇組別', 'error'); return; }
+        var div = document.getElementById('listResult');
+        div.innerHTML = '<div style="text-align:center; padding:20px;">📋 載入中...</div>';
+        try {
+            const r = await callAPI('getFullMemberListByGroup', { groupName: group });
+            if (r.error) { div.innerHTML = '<div style="color:red;">' + r.error + '</div>'; return; }
+            if (!r.members || r.members.length === 0) { div.innerHTML = '<div>無會員資料</div>'; return; }
+            var sortedMembers = r.members.slice();
+            sortedMembers.sort(function(a, b) {
+                var groupA = a.group || '';
+                var groupB = b.group || '';
+                var numA = parseInt(groupA.replace('第', '').replace('組', '')) || 99;
+                var numB = parseInt(groupB.replace('第', '').replace('組', '')) || 99;
+                if (numA !== numB) return numA - numB;
+                var noA = parseInt(a.memberNo) || 0;
+                var noB = parseInt(b.memberNo) || 0;
+                return noA - noB;
+            });
+            var colorOdd = '#FDFCFB', colorEven = '#EAE9E5', lastGroup = '', groupIndex = -1;
+            var html = '<div class="member-table-wrapper"><table class="member-table"><thead><tr><th>序號</th><th>編號</th><th>姓名</th><th>組別</th><th>狀態</th><th>性別</th><th>年齡</th><th>常居地</th><th>電話</th><th>LINE</th><th>備註</th></tr></thead><tbody>';
+            for (var i = 0; i < sortedMembers.length; i++) {
+                var m = sortedMembers[i];
+                var st = m.isActive ? '✅ 正常' : '❌ 停用';
+                var currentGroup = m.group || '';
+                if (lastGroup !== currentGroup) groupIndex++;
+                if (lastGroup === '') groupIndex = 0;
+                var bgColor = (groupIndex % 2 === 0) ? colorOdd : colorEven;
+                html += '<tr style="background-color:' + bgColor + ';">' +
+                    '<td style="text-align:center;">' + (i+1) + '</td>' +
+                    '<td style="text-align:center;">' + m.memberNo + '</td>' +
+                    '<td>' + maskName(m.name) + '</td>' +
+                    '<td style="text-align:center;">' + (m.group || '-') + '</td>' +
+                    '<td style="text-align:center;">' + st + '</td>' +
+                    '<td style="text-align:center;">' + (m.gender || '-') + '</td>' +
+                    '<td style="text-align:center;">' + (m.age || '-') + '</td>' +
+                    '<td>' + (m.location || '-') + '</td>' +
+                    '<td>' + (m.phone || '-') + '</td>' +
+                    '<td>' + (m.line || '-') + '</td>' +
+                    '<td>' + (m.remark || '-') + '</td>' +
+                    '</tr>';
+                lastGroup = currentGroup;
+            }
+            html += '</tbody></table></div><div style="text-align:center; font-size:12px; color:#8d6e63; margin-top:10px;">共 ' + r.total + ' 人</div>';
+            div.innerHTML = html;
+        } catch(err) { div.innerHTML = '<div style="color:red;">載入失敗：' + err.message + '</div>'; }
+    };
+    
+    // ========================================
+    // 🔥 組長查詢
+    // ========================================
+    document.getElementById('leaderCheckBtn').onclick = async function() {
+        var group = document.getElementById('leaderUploadGroup').value;
+        var no = document.getElementById('leaderUploadNo').value.trim();
+        if (!group || !no) { showMsg('leaderUploadMsg', '請選擇組別並輸入編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberInfoForForm', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentLeader = r;
+                document.getElementById('uploadMemberCard').style.display = 'block';
+                document.getElementById('uploadTargetName').innerText = maskName(r.name);
+                var cnt = r.uploadInfo.uploadedCount;
+                document.getElementById('uploadTargetCount').innerText = cnt;
+                var html = '<div><strong>📋 上傳紀錄：</strong></div>';
+                if (r.uploadInfo.history && r.uploadInfo.history.length) {
+                    for (var i = 0; i < r.uploadInfo.history.length; i++) {
+                        var h = r.uploadInfo.history[i];
+                        var timeStr = h.date ? h.date : '時間未記錄';
+                        html += '<div class="history-item" style="margin:4px 0;"><span>第 ' + h.number + ' 次：數字 ' + h.amount + '</span><span class="history-time">🕘 ' + timeStr + '</span></div>';
+                    }
+                } else { html = '<div>無紀錄</div>'; }
+                document.getElementById('uploadHistory').innerHTML = html;
+                document.getElementById('leaderUploadBtn').disabled = cnt >= 5;
+            } else { showMsg('leaderUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderUploadMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    // ========================================
+    // 🔥 組長上傳
+    // ========================================
+    document.getElementById('leaderUploadBtn').onclick = async function() {
+        if (!currentLeader) { showMsg('leaderUploadMsg', '請先查詢', 'error'); return; }
+        var amount = parseFloat(document.getElementById('leaderUploadAmount').value);
+        var remark = document.getElementById('leaderUploadRemark').value;
+        if (isNaN(amount) || amount <= 0) { showMsg('leaderUploadMsg', '請輸入有效數字', 'error'); return; }
+        var no = document.getElementById('leaderUploadNo').value.trim();
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 上傳中...';
+        try {
+            const r = await callAPI('leaderUpload', { memberNo: no, memberName: currentLeader.name, amount: amount, remark: remark, group: document.getElementById('leaderUploadGroup').value });
+            if (r.success) {
+                showMsg('leaderUploadMsg', r.message, 'success');
+                document.getElementById('leaderUploadAmount').value = '';
+                document.getElementById('leaderUploadRemark').value = '';
+                document.getElementById('leaderCheckBtn').click();
+            } else { showMsg('leaderUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderUploadMsg', '上傳失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // ========================================
+    // 🔥 全部統計
+    // ========================================
+    document.getElementById('allStatsBtn').onclick = function() {
+        showYearMonthPicker(async function(year, month) {
+            var div = document.getElementById('statsAllArea');
+            div.innerHTML = '<div style="text-align:center; padding:20px;">📊 載入中...</div>';
+            try {
+                const r = await callAPI('getAllGroupsReportData', { year: year, month: month });
+                if (typeof r === 'string') { div.innerHTML = r; return; }
+                var html = '<div style="font-weight:bold; margin-bottom:12px;">📊 全部組別統計 (' + year + '年 ' + month + '月)</div>';
+                if (Object.keys(r).length === 0) { html += '<div>暫無資料</div>'; }
+                else {
+                    for (var g in r) {
+                        html += '<div style="background:white; border-radius:30px; padding:12px; margin-bottom:10px; border-left:4px solid #f97316;"><strong>' + g + '</strong><br>👥 會員人數: ' + (r[g].memberCount || 0) + '<br>📤 已上傳: ' + (r[g].totalUploads || 0) + '<br>💰 總數: ' + (r[g].totalAmount || 0).toLocaleString() + ' </div>';
+                    }
+                }
+                div.innerHTML = html;
+            } catch(err) { div.innerHTML = '<div style="color:red;">載入失敗：' + err.message + '</div>'; }
+        });
+    };
+    
+    // ========================================
+    // 🔥 詳細統計
+    // ========================================
+    document.getElementById('detailStatsBtn').onclick = function() {
+        var group = document.getElementById('detailGroupSelect').value;
+        if (!group) { showMsg('statsDetailArea', '請選擇組別', 'error'); return; }
+        showYearMonthPicker(async function(year, month) {
+            var div = document.getElementById('statsDetailArea');
+            div.innerHTML = '<div style="text-align:center; padding:20px;">📊 載入中...</div>';
+            try {
+                const r = await callAPI('getGroupDetailUploadData', { year: year, month: month, groupName: group });
+                if (typeof r === 'string') { div.innerHTML = r; return; }
+                if (r.html) {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = r.html;
+                    var rows = tempDiv.querySelectorAll('table tbody tr');
+                    var oddColor = '#FDFCFB', evenColor = '#EAE9E5';
+                    for (var i = 0; i < rows.length; i++) {
+                        var cells = rows[i].querySelectorAll('td');
+                        if (cells.length >= 3) {
+                            var nameCell = cells[2];
+                            if (nameCell) {
+                                var originalName = nameCell.innerText;
+                                var cleanName = originalName.replace(' ✓', '').trim();
+                                nameCell.innerHTML = maskName(cleanName) + (originalName.includes('✓') ? ' ✓' : '');
+                            }
+                        }
+                        rows[i].style.backgroundColor = (i % 2 === 0) ? oddColor : evenColor;
+                    }
+                    var processedHtml = tempDiv.innerHTML;
+                    var total = r.monthlyTotalAmount || 0;
+                    var rate = r.active > 0 ? ((r.uploaded / r.active) * 100).toFixed(1) : 0;
+                    var html = '<div style="background:white; border-radius:24px; padding:16px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08);"><div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:16px; padding-bottom:12px; border-bottom:2px solid #f97316;"><span style="font-size:18px; font-weight:bold; color:#5d4037;">📋 ' + group + '</span><span style="font-size:14px; color:#8d6e63;">' + year + '年 ' + month + '月</span></div><div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px;"><div style="flex:1; min-width:100px; background:#fef9e8; border-radius:20px; padding:12px; text-align:center;"><div style="font-size:12px; color:#8d6e63;">👥 總會員數</div><div style="font-size:24px; font-weight:bold; color:#4e342e;">' + (r.total || 0) + '</div></div><div style="flex:1; min-width:100px; background:#fef9e8; border-radius:20px; padding:12px; text-align:center;"><div style="font-size:12px; color:#8d6e63;">✅ 正常會員</div><div style="font-size:24px; font-weight:bold; color:#4e342e;">' + (r.active || 0) + '</div></div><div style="flex:1; min-width:100px; background:#fef9e8; border-radius:20px; padding:12px; text-align:center;"><div style="font-size:12px; color:#8d6e63;">❌ 停用會員</div><div style="font-size:24px; font-weight:bold; color:#4e342e;">' + (r.stopped || 0) + '</div></div><div style="flex:1; min-width:100px; background:#fef9e8; border-radius:20px; padding:12px; text-align:center;"><div style="font-size:12px; color:#8d6e63;">📤 已上傳人數</div><div style="font-size:24px; font-weight:bold; color:#4e342e;">' + (r.uploaded || 0) + '<span style="font-size:14px;">/' + (r.active || 0) + '</span></div></div><div style="flex:1; min-width:100px; background:#fef9e8; border-radius:20px; padding:12px; text-align:center;"><div style="font-size:12px; color:#8d6e63;">💰 當月總數</div><div style="font-size:24px; font-weight:bold; color:#4e342e;">' + total.toLocaleString() + '</div></div></div><div style="text-align:center; margin-top:8px; padding:8px; background:#efebe9; border-radius:20px;"><span style="font-size:13px; color:#5d4037;">📈 上傳率 ' + rate + '%</span></div></div><div style="overflow-x:auto; border-radius:20px;">' + processedHtml + '</div>';
+                    div.innerHTML = html;
+                } else { div.innerHTML = r; }
+            } catch(err) { div.innerHTML = '<div style="color:red;">載入失敗：' + err.message + '</div>'; }
+        });
+    };
+    
+    // ========================================
+    // 🔥 使用者頁籤
+    // ========================================
+    document.querySelectorAll('.user-tab').forEach(function(t) {
+        t.onclick = function() {
+            document.querySelectorAll('.user-tab').forEach(function(tt) { tt.classList.remove('active'); });
+            t.classList.add('active');
+            var target = t.getAttribute('data-tab');
+            document.getElementById('registerPane').classList.remove('active');
+            document.getElementById('uploadPane').classList.remove('active');
+            if (target === 'register') { document.getElementById('registerPane').classList.add('active'); }
+            else { document.getElementById('uploadPane').classList.add('active'); }
+        };
+    });
+    
+    loadGroups();
+</script>
+</body>
+</html>
