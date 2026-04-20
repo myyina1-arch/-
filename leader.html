@@ -151,7 +151,7 @@
 </div>
 
 <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzD6HoAIzqxMT1ZDJPpY__RgNFcDiPuin9adVTeThwnkgToeKJHpoXgdK4Wrg7oHkc/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxNSy3BW8vEDdeC_5kdacW_9smwLEQ2UwLgUnhyvlA2FszWskxsSVnAaTeIXT2m0oYL/exec';
     
     var currentEditNo = null;
     var currentLeader = null;
@@ -202,4 +202,224 @@
     }
     
     // 組長登入
-    var pwd
+    var pwdModal = document.getElementById('pwdModal');
+    function showLeaderPanel() {
+        pwdModal.classList.add('active');
+    }
+    document.getElementById('openLeaderBtn') && document.getElementById('openLeaderBtn').remove();
+    showLeaderPanel();
+    
+    document.getElementById('pwdCancel').onclick = function() { pwdModal.classList.remove('active'); document.getElementById('pwdInput').value = ''; };
+    document.getElementById('pwdConfirm').onclick = function() {
+        var pwd = document.getElementById('pwdInput').value;
+        if (pwd === '111') {
+            pwdModal.classList.remove('active');
+            loadGroups();
+        } else { 
+            showMsg('pwdMsg', '密碼錯誤', 'error'); 
+        }
+    };
+    
+    // 頁籤切換
+    var tabs = document.querySelectorAll('.leader-tab');
+    var panes = { add: 'addPane', edit: 'editPane', list: 'listPane', upload: 'leaderUploadPane', stats: 'statsPane' };
+    tabs.forEach(function(t) {
+        t.onclick = function() {
+            tabs.forEach(function(tt) { tt.classList.remove('active'); });
+            t.classList.add('active');
+            var target = t.getAttribute('data-tab');
+            for (var p in panes) { var pane = document.getElementById(panes[p]); if (pane) pane.classList.remove('active'); }
+            var targetPane = document.getElementById(panes[target]);
+            if (targetPane) targetPane.classList.add('active');
+        };
+    });
+    
+    // 新增會員
+    document.getElementById('leaderAddBtn').onclick = async function() {
+        var data = {
+            group: document.getElementById('leaderGroupAdd').value,
+            memberNo: document.getElementById('leaderMemberNo').value.trim(),
+            name: document.getElementById('leaderName').value.trim(),
+            gender: document.getElementById('leaderGender').value,
+            age: parseInt(document.getElementById('leaderAge').value) || 0,
+            location: document.getElementById('leaderLocation').value,
+            phone: document.getElementById('leaderPhone').value,
+            line: document.getElementById('leaderLine').value,
+            remark: document.getElementById('leaderRemark').value
+        };
+        if (!data.group) { showMsg('leaderAddMsg', '請選擇組別', 'error'); return; }
+        if (!data.name) { showMsg('leaderAddMsg', '請輸入姓名', 'error'); return; }
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 處理中...';
+        try {
+            const r = await callAPI('addLeaderMember', data);
+            if (r.success) {
+                document.getElementById('leaderMemberNo').value = '';
+                document.getElementById('leaderName').value = '';
+                document.getElementById('leaderAge').value = '';
+                document.getElementById('leaderLocation').value = '';
+                document.getElementById('leaderPhone').value = '';
+                document.getElementById('leaderLine').value = '';
+                document.getElementById('leaderRemark').value = '';
+                showSuccessModal(r.message);
+            } else { showMsg('leaderAddMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderAddMsg', '新增失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // 查詢修改
+    document.getElementById('searchEditBtn').onclick = async function() {
+        var group = document.getElementById('editGroupSelect').value;
+        var no = document.getElementById('editMemberNo').value.trim();
+        if (!group || !no) { showMsg('editMsg', '請選擇組別並輸入編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberDetail', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentEditNo = no;
+                document.getElementById('editDetail').style.display = 'block';
+                document.getElementById('editName').value = r.name;
+                document.getElementById('editGroupNew').value = r.group;
+                document.getElementById('editGender').value = r.gender || '男';
+                document.getElementById('editAge').value = r.age || '';
+                document.getElementById('editLocation').value = r.location || '';
+                document.getElementById('editPhone').value = r.phone || '';
+                document.getElementById('editLine').value = r.line || '';
+                document.getElementById('editRemark').value = r.remark || '';
+            } else { showMsg('editMsg', r.message, 'error'); }
+        } catch(err) { showMsg('editMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    // 儲存修改
+    document.getElementById('updateBtn').onclick = async function() {
+        if (!currentEditNo) { showMsg('editMsg', '請先查詢', 'error'); return; }
+        var data = {
+            memberNo: currentEditNo,
+            name: document.getElementById('editName').value.trim(),
+            group: document.getElementById('editGroupNew').value,
+            gender: document.getElementById('editGender').value,
+            age: parseInt(document.getElementById('editAge').value) || 0,
+            location: document.getElementById('editLocation').value,
+            phone: document.getElementById('editPhone').value,
+            line: document.getElementById('editLine').value,
+            remark: document.getElementById('editRemark').value
+        };
+        if (!data.name) { showMsg('editMsg', '姓名不可為空', 'error'); return; }
+        try {
+            const r = await callAPI('updateMember', data);
+            if (r.success) {
+                showMsg('editMsg', r.message, 'success');
+                document.getElementById('editDetail').style.display = 'none';
+                document.getElementById('editMemberNo').value = '';
+                currentEditNo = null;
+            } else { showMsg('editMsg', r.message, 'error'); }
+        } catch(err) { showMsg('editMsg', '儲存失敗：' + err.message, 'error'); }
+    };
+    
+    // 會員列表
+    document.getElementById('showListBtn').onclick = async function() {
+        var group = document.getElementById('listGroupSelect').value;
+        if (!group) { showMsg('listResult', '請選擇組別', 'error'); return; }
+        var div = document.getElementById('listResult');
+        div.innerHTML = '<div style="text-align:center; padding:20px;">📋 載入中...</div>';
+        try {
+            const r = await callAPI('getFullMemberListByGroup', { groupName: group });
+            if (r.error) { div.innerHTML = '<div style="color:red;">' + r.error + '</div>'; return; }
+            if (!r.members || r.members.length === 0) { div.innerHTML = '<div>無會員資料</div>'; return; }
+            var html = '<div class="member-table-wrapper"><table class="member-table"><thead><tr><th>序號</th><th>編號</th><th>姓名</th><th>組別</th><th>狀態</th></tr></thead><tbody>';
+            for (var i = 0; i < r.members.length; i++) {
+                var m = r.members[i];
+                var st = m.isActive ? '✅ 正常' : '❌ 停用';
+                html += '<tr><td>' + (i+1) + '</td><td>' + m.memberNo + '</td><td>' + maskName(m.name) + '</td><td>' + (m.group || '-') + '</td><td>' + st + '</td></tr>';
+            }
+            html += '</tbody>}</div><div style="text-align:center;">共 ' + r.total + ' 人</div>';
+            div.innerHTML = html;
+        } catch(err) { div.innerHTML = '<div style="color:red;">載入失敗：' + err.message + '</div>'; }
+    };
+    
+    // 組長查詢
+    document.getElementById('leaderCheckBtn').onclick = async function() {
+        var group = document.getElementById('leaderUploadGroup').value;
+        var no = document.getElementById('leaderUploadNo').value.trim();
+        if (!group || !no) { showMsg('leaderUploadMsg', '請選擇組別並輸入編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberInfoForForm', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentLeader = r;
+                document.getElementById('uploadMemberCard').style.display = 'block';
+                document.getElementById('uploadTargetName').innerText = maskName(r.name);
+                var cnt = r.uploadInfo.uploadedCount;
+                document.getElementById('uploadTargetCount').innerText = cnt;
+                var html = '<div><strong>📋 上傳紀錄：</strong></div>';
+                if (r.uploadInfo.history && r.uploadInfo.history.length) {
+                    for (var i = 0; i < r.uploadInfo.history.length; i++) {
+                        var h = r.uploadInfo.history[i];
+                        html += '<div class="history-item">第 ' + h.number + ' 次：數字 ' + h.amount + '</div>';
+                    }
+                } else { html = '<div>無紀錄</div>'; }
+                document.getElementById('uploadHistory').innerHTML = html;
+                document.getElementById('leaderUploadBtn').disabled = cnt >= 5;
+            } else { showMsg('leaderUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderUploadMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    // 組長上傳
+    document.getElementById('leaderUploadBtn').onclick = async function() {
+        if (!currentLeader) { showMsg('leaderUploadMsg', '請先查詢', 'error'); return; }
+        var amount = parseFloat(document.getElementById('leaderUploadAmount').value);
+        var remark = document.getElementById('leaderUploadRemark').value;
+        if (isNaN(amount) || amount <= 0) { showMsg('leaderUploadMsg', '請輸入有效數字', 'error'); return; }
+        var no = document.getElementById('leaderUploadNo').value.trim();
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 上傳中...';
+        try {
+            const r = await callAPI('leaderUpload', { memberNo: no, memberName: currentLeader.name, amount: amount, remark: remark, group: document.getElementById('leaderUploadGroup').value });
+            if (r.success) {
+                showMsg('leaderUploadMsg', r.message, 'success');
+                document.getElementById('leaderUploadAmount').value = '';
+                document.getElementById('leaderUploadRemark').value = '';
+                document.getElementById('leaderCheckBtn').click();
+            } else { showMsg('leaderUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('leaderUploadMsg', '上傳失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    // 統計報表
+    document.getElementById('statsBtn').onclick = async function() {
+        var group = document.getElementById('statsGroupSelect').value;
+        if (!group) { showMsg('statsResult', '請選擇組別', 'error'); return; }
+        var div = document.getElementById('statsResult');
+        div.innerHTML = '<div style="text-align:center; padding:20px;">📊 載入中...</div>';
+        try {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const r = await callAPI('getGroupDetailUploadData', { year: year, month: month, groupName: group });
+            if (r.html) {
+                div.innerHTML = r.html;
+                var rows = div.querySelectorAll('table tbody tr');
+                for (var i = 0; i < rows.length; i++) {
+                    var cells = rows[i].querySelectorAll('td');
+                    if (cells.length >= 3) {
+                        var nameCell = cells[2];
+                        if (nameCell) {
+                            var originalName = nameCell.innerText;
+                            var cleanName = originalName.replace(' ✓', '').trim();
+                            nameCell.innerHTML = maskName(cleanName) + (originalName.includes('✓') ? ' ✓' : '');
+                        }
+                    }
+                }
+            } else { div.innerHTML = r; }
+        } catch(err) { div.innerHTML = '<div style="color:red;">載入失敗：' + err.message + '</div>'; }
+    };
+    
+    // 自動觸發登入
+    setTimeout(function() {
+        pwdModal.classList.add('active');
+    }, 100);
+</script>
+</body>
+</html>
