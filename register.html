@@ -67,11 +67,12 @@
 
 <script>
     const API_URL = 'https://script.google.com/macros/s/AKfycby2eZf2t9OjwMRrlApYzHMTI8jO51z8r3KYu-BAWPahayqi-XhpG_AUhKoeyY5z7uhm/exec';
+
+
     
     async function callAPI(action, data = {}) {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: action, ...data })
         });
         return await response.json();
