@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>會員上傳系統 - 線上報名</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%); 
+            margin: 0; 
+            padding: 20px 16px 40px 16px;
+            min-height: 100vh; 
+        }
+        .app-container { 
+            max-width: 600px; 
+            width: 100%; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 40px; 
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35); 
+            overflow: hidden; 
+        }
+        .hero-header { background: #1e293b; color: white; padding: 24px 20px; text-align: center; }
+        .hero-header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .hero-header p { margin: 6px 0 0; opacity: 0.8; font-size: 0.85rem; }
+        .nav-links { display: flex; background: #f1f5f9; padding: 8px; gap: 8px; }
+        .nav-link { flex: 1; text-align: center; padding: 10px; background: #e2e8f0; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; font-size: 14px; }
+        .nav-link.active { background: #f97316; color: white; }
+        .tab-pane { padding: 24px 22px; background: white; }
+        .form-row { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #0f172a; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; }
+        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; }
+        .flex-2col { display: flex; gap: 12px; }
+        .flex-2col > div { flex: 1; }
+        .message { margin-top: 16px; padding: 12px; border-radius: 40px; text-align: center; font-size: 0.85rem; display: none; }
+        .message.success { background: #dcfce7; color: #15803d; display: block; }
+        .message.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .info-card { background: #fef9e8; border-left: 5px solid #f97316; padding: 14px; border-radius: 24px; margin-bottom: 20px; }
+        footer { text-align: center; font-size: 11px; padding: 14px; color: #94a3b8; background: #f8fafc; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="hero-header">
+        <h1>📝 線上報名</h1>
+        <p>報名成功後專人聯絡</p>
+    </div>
+    <div class="nav-links">
+        <a href="upload.html" class="nav-link">📤 上傳數字</a>
+        <a href="register.html" class="nav-link active">📝 線上報名</a>
+        <a href="leader.html" class="nav-link">👥 組長專區</a>
+    </div>
+    <div class="tab-pane">
+        <div class="info-card">⚡ 報名成功後，專人將與您聯絡並告知會員編號</div>
+        <div class="form-row"><label>👤 姓名</label><input type="text" id="regName" placeholder="請輸入真實姓名"></div>
+        <div class="flex-2col"><div><label>性別</label><select id="regGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="regAge" placeholder="年齡"></div></div>
+        <div class="form-row"><label>📍 常居地</label><input type="text" id="regCity" placeholder="城市/地區"></div>
+        <div class="flex-2col"><div><label>📞 電話</label><input type="tel" id="regPhone" placeholder="手機號碼"></div><div><label>💬 LINE</label><input type="text" id="regLine" placeholder="LINE ID"></div></div>
+        <div class="form-row"><label>📝 備註</label><textarea id="regRemark" rows="2"></textarea></div>
+        <button id="doRegisterBtn">✅ 確認報名</button>
+        <div id="registerMsg" class="message"></div>
+    </div>
+    <footer>© 會員上傳系統</footer>
+</div>
+
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzD6HoAIzqxMT1ZDJPpY__RgNFcDiPuin9adVTeThwnkgToeKJHpoXgdK4Wrg7oHkc/exec';
+    
+    async function callAPI(action, data = {}) {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, ...data })
+        });
+        return await response.json();
+    }
+    
+    function showMsg(id, msg, type) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.className = 'message ' + type;
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(function() { if (el) el.style.display = 'none'; }, 3000);
+        }
+    }
+    
+    function showSuccessModal(message) {
+        alert(message);
+    }
+    
+    document.getElementById('doRegisterBtn').onclick = async function() {
+        var name = document.getElementById('regName').value.trim();
+        if (!name) { showMsg('registerMsg', '請填寫姓名', 'error'); return; }
+        
+        var data = {
+            name: name,
+            gender: document.getElementById('regGender').value,
+            age: parseInt(document.getElementById('regAge').value) || 0,
+            location: document.getElementById('regCity').value,
+            phone: document.getElementById('regPhone').value,
+            line: document.getElementById('regLine').value,
+            remark: document.getElementById('regRemark').value
+        };
+        
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 處理中...';
+        
+        try {
+            const r = await callAPI('register', data);
+            if (r.success) {
+                document.getElementById('regName').value = '';
+                document.getElementById('regAge').value = '';
+                document.getElementById('regCity').value = '';
+                document.getElementById('regPhone').value = '';
+                document.getElementById('regLine').value = '';
+                document.getElementById('regRemark').value = '';
+                showSuccessModal(r.message);
+            } else {
+                showMsg('registerMsg', r.message, 'error');
+            }
+        } catch(err) {
+            showMsg('registerMsg', '報名失敗：' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    };
+</script>
+</body>
+</html>

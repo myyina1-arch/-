@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>會員上傳系統 - 上傳數字</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%); 
+            margin: 0; 
+            padding: 20px 16px 40px 16px;
+            min-height: 100vh; 
+        }
+        .app-container { 
+            max-width: 600px; 
+            width: 100%; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 40px; 
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35); 
+            overflow: hidden; 
+        }
+        .hero-header { background: #1e293b; color: white; padding: 24px 20px; text-align: center; }
+        .hero-header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .hero-header p { margin: 6px 0 0; opacity: 0.8; font-size: 0.85rem; }
+        .nav-links { display: flex; background: #f1f5f9; padding: 8px; gap: 8px; }
+        .nav-link { flex: 1; text-align: center; padding: 10px; background: #e2e8f0; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; font-size: 14px; }
+        .nav-link.active { background: #f97316; color: white; }
+        .tab-pane { padding: 24px 22px; background: white; }
+        .form-row { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #0f172a; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; }
+        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; }
+        button.secondary { background: #475569; }
+        .message { margin-top: 16px; padding: 12px; border-radius: 40px; text-align: center; font-size: 0.85rem; display: none; }
+        .message.success { background: #dcfce7; color: #15803d; display: block; }
+        .message.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .info-card { background: #fef9e8; border-left: 5px solid #f97316; padding: 14px; border-radius: 24px; margin-bottom: 20px; }
+        .warning-badge { background: #ffedd5; color: #9a3412; padding: 10px; border-radius: 30px; text-align: center; font-weight: bold; margin-bottom: 16px; display: none; }
+        .history-item { font-size: 0.8rem; background: #fff7ed; margin: 6px 0; padding: 8px 12px; border-radius: 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .history-time { font-size: 0.7rem; color: #8d6e63; background: #f0e4c6; padding: 2px 8px; border-radius: 20px; }
+        footer { text-align: center; font-size: 11px; padding: 14px; color: #94a3b8; background: #f8fafc; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="hero-header">
+        <h1>📤 上傳數字表</h1>
+        <p>請輸入會員編號上傳數字</p>
+    </div>
+    <div class="nav-links">
+        <a href="upload.html" class="nav-link active">📤 上傳數字</a>
+        <a href="register.html" class="nav-link">📝 線上報名</a>
+        <a href="leader.html" class="nav-link">👥 組長專區</a>
+    </div>
+    <div class="tab-pane">
+        <div class="form-row"><label>📋 組別</label><select id="userGroupSelect"><option value="">請選擇組別</option></select></div>
+        <div class="form-row"><label>🔢 會員編號</label><input type="text" id="userMemberNo" placeholder="請輸入會員編號"></div>
+        <div id="userMemberInfo" style="display:none;" class="info-card">
+            <div><strong>📌 會員姓名：</strong> <span id="showMemberName">-</span></div>
+            <div><strong>📊 已上傳次數：</strong> <span id="uploadCountSpan">0</span> / 5</div>
+            <div id="historyArea"></div>
+        </div>
+        <div id="userLimitWarning" class="warning-badge">⚠️ 本月已達5次上傳上限！</div>
+        <div class="form-row"><label>💰 上傳數字</label><input type="number" id="userAmount" placeholder="請輸入數字"></div>
+        <div class="form-row"><label>📝 備註</label><input type="text" id="userRemark" placeholder="備註說明"></div>
+        <button id="userCheckBtn" class="secondary">🔍 查詢</button>
+        <button id="userUploadBtn" disabled>📤 確認上傳</button>
+        <div id="userUploadMsg" class="message"></div>
+    </div>
+    <footer>© 會員上傳系統</footer>
+</div>
+
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzD6HoAIzqxMT1ZDJPpY__RgNFcDiPuin9adVTeThwnkgToeKJHpoXgdK4Wrg7oHkc/exec';
+    
+    var currentUser = null;
+    
+    async function callAPI(action, data = {}) {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, ...data })
+        });
+        return await response.json();
+    }
+    
+    function maskName(name) {
+        if (!name) return '';
+        var n = name.trim();
+        if (n.length <= 2) return n;
+        return n.charAt(0) + 'O' + n.charAt(n.length - 1);
+    }
+    
+    function showMsg(id, msg, type) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.className = 'message ' + type;
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(function() { if (el) el.style.display = 'none'; }, 3000);
+        }
+    }
+    
+    async function loadGroups() {
+        try {
+            const groups = await callAPI('getGroupsList');
+            var allGroups = ['全部'].concat(groups);
+            var sel = document.getElementById('userGroupSelect');
+            if (sel) {
+                sel.innerHTML = '<option value="">請選擇組別</option>';
+                allGroups.forEach(function(g) { sel.innerHTML += '<option value="' + g + '">' + g + '</option>'; });
+            }
+        } catch(e) { console.error('載入組別失敗:', e); }
+    }
+    
+    document.getElementById('userCheckBtn').onclick = async function() {
+        var group = document.getElementById('userGroupSelect').value;
+        var no = document.getElementById('userMemberNo').value.trim();
+        if (!group) { showMsg('userUploadMsg', '請選擇組別', 'error'); return; }
+        if (!no) { showMsg('userUploadMsg', '請輸入會員編號', 'error'); return; }
+        try {
+            const r = await callAPI('getMemberInfoForForm', { memberNo: no, groupName: group });
+            if (r.success) {
+                currentUser = r;
+                document.getElementById('userMemberInfo').style.display = 'block';
+                document.getElementById('showMemberName').innerText = maskName(r.name);
+                var cnt = r.uploadInfo.uploadedCount;
+                document.getElementById('uploadCountSpan').innerText = cnt;
+                var html = '<div><strong>📋 歷史上傳：</strong></div>';
+                if (r.uploadInfo.history && r.uploadInfo.history.length) {
+                    for (var i = 0; i < r.uploadInfo.history.length; i++) {
+                        var h = r.uploadInfo.history[i];
+                        var timeStr = h.date ? h.date : '時間未記錄';
+                        html += '<div class="history-item"><span>📌 第 ' + h.number + ' 次：數字 ' + h.amount + '</span><span class="history-time">🕘 ' + timeStr + '</span></div>';
+                    }
+                } else { html += '<div>無紀錄</div>'; }
+                document.getElementById('historyArea').innerHTML = html;
+                var full = cnt >= 5;
+                document.getElementById('userLimitWarning').style.display = full ? 'block' : 'none';
+                document.getElementById('userUploadBtn').disabled = full;
+            } else {
+                document.getElementById('userMemberInfo').style.display = 'none';
+                showMsg('userUploadMsg', r.message, 'error');
+            }
+        } catch(err) { showMsg('userUploadMsg', '查詢失敗：' + err.message, 'error'); }
+    };
+    
+    document.getElementById('userUploadBtn').onclick = async function() {
+        if (!currentUser) { showMsg('userUploadMsg', '請先查詢', 'error'); return; }
+        var amount = parseFloat(document.getElementById('userAmount').value);
+        var remark = document.getElementById('userRemark').value;
+        if (isNaN(amount) || amount <= 0) { showMsg('userUploadMsg', '請輸入有效數字', 'error'); return; }
+        var no = document.getElementById('userMemberNo').value.trim();
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 上傳中...';
+        try {
+            const r = await callAPI('upload', { memberNo: no, memberName: currentUser.name, amount: amount, remark: remark });
+            if (r.success) {
+                showMsg('userUploadMsg', r.message, 'success');
+                document.getElementById('userAmount').value = '';
+                document.getElementById('userRemark').value = '';
+                document.getElementById('userCheckBtn').click();
+            } else { showMsg('userUploadMsg', r.message, 'error'); }
+        } catch(err) { showMsg('userUploadMsg', '上傳失敗：' + err.message, 'error'); }
+        finally { btn.disabled = false; btn.innerText = originalText; }
+    };
+    
+    loadGroups();
+</script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>會員上傳系統 - 組長專區</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', sans-serif; }
+        body { 
+            background: linear-gradient(145deg, #e0e7ff 0%, #c7d2fe 100%); 
+            margin: 0; 
+            padding: 20px 16px 40px 16px;
+            min-height: 100vh; 
+        }
+        .app-container { 
+            max-width: 900px; 
+            width: 100%; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 40px; 
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35); 
+            overflow: hidden; 
+        }
+        .hero-header { background: #1e293b; color: white; padding: 24px 20px; text-align: center; }
+        .hero-header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
+        .hero-header p { margin: 6px 0 0; opacity: 0.8; font-size: 0.85rem; }
+        .nav-links { display: flex; background: #f1f5f9; padding: 8px; gap: 8px; }
+        .nav-link { flex: 1; text-align: center; padding: 10px; background: #e2e8f0; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; font-size: 14px; }
+        .nav-link.active { background: #f97316; color: white; }
+        .leader-tabs { display: flex; background: #f1f5f9; gap: 4px; padding: 8px; flex-wrap: wrap; }
+        .leader-tab { flex: 1; text-align: center; padding: 10px 4px; background: #e2e8f0; border-radius: 60px; font-weight: 600; cursor: pointer; font-size: 0.8rem; min-width: 70px; }
+        .leader-tab.active { background: #f97316; color: white; }
+        .tab-pane { display: none; padding: 24px 22px; background: white; }
+        .tab-pane.active { display: block; }
+        .form-row { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; color: #0f172a; font-size: 0.9rem; }
+        input, select, textarea { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; }
+        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; }
+        button.secondary { background: #475569; }
+        .flex-2col { display: flex; gap: 12px; }
+        .flex-2col > div { flex: 1; }
+        .message { margin-top: 16px; padding: 12px; border-radius: 40px; text-align: center; font-size: 0.85rem; display: none; }
+        .message.success { background: #dcfce7; color: #15803d; display: block; }
+        .message.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .info-card { background: #fef9e8; border-left: 5px solid #f97316; padding: 14px; border-radius: 24px; margin-bottom: 20px; }
+        .member-table-wrapper { overflow-x: auto; margin-top: 16px; border-radius: 20px; }
+        .member-table { width: 100%; min-width: 700px; border-collapse: collapse; background: white; font-size: 13px; }
+        .member-table th { background: #8d6e63; color: white; padding: 12px 8px; text-align: center; }
+        .member-table td { padding: 10px 8px; text-align: center; border-bottom: 1px solid #eee; }
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); 
+            display: flex; align-items: flex-start; justify-content: center; z-index: 1000; 
+            visibility: hidden; opacity: 0; transition: 0.2s; padding-top: 80px;
+        }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-card { background: white; border-radius: 48px; padding: 28px; width: 300px; text-align: center; }
+        .modal-card input { margin: 20px 0; padding: 12px; width: 100%; border-radius: 30px; border: 1.5px solid #e2e8f0; }
+        .modal-buttons { display: flex; gap: 12px; }
+        .modal-buttons button { margin-top: 0; }
+        footer { text-align: center; font-size: 11px; padding: 14px; color: #94a3b8; background: #f8fafc; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="hero-header">
+        <h1>👥 組長專區</h1>
+        <p>會員管理 / 統計報表</p>
+    </div>
+    <div class="nav-links">
+        <a href="upload.html" class="nav-link">📤 上傳數字</a>
+        <a href="register.html" class="nav-link">📝 線上報名</a>
+        <a href="leader.html" class="nav-link active">👥 組長專區</a>
+    </div>
+    
+    <div class="leader-tabs">
+        <div class="leader-tab active" data-tab="add">➕ 新增會員</div>
+        <div class="leader-tab" data-tab="edit">✏️ 修改會員</div>
+        <div class="leader-tab" data-tab="list">📋 會員列表</div>
+        <div class="leader-tab" data-tab="upload">📤 上傳專區</div>
+        <div class="leader-tab" data-tab="stats">📊 統計報表</div>
+    </div>
+    
+    <div id="addPane" class="tab-pane active">
+        <div class="form-row"><label>組別</label><select id="leaderGroupAdd"><option value="">選擇組別</option></select></div>
+        <div class="form-row"><label>會員編號</label><input type="text" id="leaderMemberNo" placeholder="留空自動產生"></div>
+        <div class="form-row"><label>姓名</label><input type="text" id="leaderName"></div>
+        <div class="flex-2col"><div><label>性別</label><select id="leaderGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="leaderAge"></div></div>
+        <div class="form-row"><label>常居地</label><input type="text" id="leaderLocation"></div>
+        <div class="flex-2col"><div><label>電話</label><input type="text" id="leaderPhone"></div><div><label>LINE</label><input type="text" id="leaderLine"></div></div>
+        <div class="form-row"><label>備註</label><textarea id="leaderRemark" rows="2"></textarea></div>
+        <button id="leaderAddBtn">✅ 確認新增</button>
+        <div id="leaderAddMsg" class="message"></div>
+    </div>
+    
+    <div id="editPane" class="tab-pane">
+        <div class="flex-2col"><div><label>組別</label><select id="editGroupSelect"><option value="">選擇組別</option></select></div><div><label>會員編號</label><input type="text" id="editMemberNo"></div></div>
+        <button id="searchEditBtn" class="secondary">🔍 查詢</button>
+        <div id="editDetail" style="display:none;">
+            <div class="info-card">編輯資料</div>
+            <div class="form-row"><label>姓名</label><input type="text" id="editName"></div>
+            <div class="form-row"><label>組別</label><select id="editGroupNew"><option value="">選擇組別</option></select></div>
+            <div class="flex-2col"><div><label>性別</label><select id="editGender"><option>男</option><option>女</option></select></div><div><label>年齡</label><input type="number" id="editAge"></div></div>
+            <div class="form-row"><label>常居地</label><input type="text" id="editLocation"></div>
+            <div class="flex-2col"><div><label>電話</label><input type="text" id="editPhone"></div><div><label>LINE</label><input type="text" id="editLine"></div></div>
+            <div class="form-row"><label>備註</label><textarea id="editRemark" rows="2"></textarea></div>
+            <button id="updateBtn">💾 儲存</button>
+        </div>
+        <div id="editMsg" class="message"></div>
+    </div>
+    
+    <div id="listPane" class="tab-pane">
+        <div class="form-row"><label>選擇組別</label><select id="listGroupSelect"><option value="">請選擇組別</option></select></div>
+        <button id="showListBtn" class="secondary">🔍 顯示會員列表</button>
+        <div id="listResult"></div>
+    </div>
+    
+    <div id="leaderUploadPane" class="tab-pane">
+        <div class="form-row"><label>組別</label><select id="leaderUploadGroup"><option value="">選擇組別</option></select></div>
+        <div class="form-row"><label>會員編號</label><input type="text" id="leaderUploadNo"></div>
+        <div id="uploadMemberCard" style="display:none;" class="info-card">
+            <div><strong>會員：</strong> <span id="uploadTargetName">-</span></div>
+            <div><strong>上傳次數：</strong> <span id="uploadTargetCount">0</span> / 5</div>
+            <div id="uploadHistory"></div>
+        </div>
+        <div class="form-row"><label>上傳數字</label><input type="number" id="leaderUploadAmount"></div>
+        <div class="form-row"><label>備註</label><input type="text" id="leaderUploadRemark"></div>
+        <button id="leaderCheckBtn" class="secondary">🔍 查詢</button>
+        <button id="leaderUploadBtn" disabled>📤 確認上傳</button>
+        <div id="leaderUploadMsg" class="message"></div>
+    </div>
+    
+    <div id="statsPane" class="tab-pane">
+        <div class="form-row"><label>選擇組別</label><select id="statsGroupSelect"><option value="">請選擇組別</option></select></div>
+        <button id="statsBtn" class="secondary">📊 顯示統計</button>
+        <div id="statsResult" style="margin-top:20px;"></div>
+    </div>
+    
+    <footer>© 組長專區</footer>
+</div>
+
+<div id="pwdModal" class="modal-overlay">
+    <div class="modal-card">
+        <h3>🔐 組長驗證</h3>
+        <input type="password" id="pwdInput" placeholder="請輸入密碼">
+        <div class="modal-buttons">
+            <button id="pwdConfirm">確認</button>
+            <button id="pwdCancel" class="secondary">取消</button>
+        </div>
+        <div id="pwdMsg" class="message"></div>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzD6HoAIzqxMT1ZDJPpY__RgNFcDiPuin9adVTeThwnkgToeKJHpoXgdK4Wrg7oHkc/exec';
+    
+    var currentEditNo = null;
+    var currentLeader = null;
+    
+    async function callAPI(action, data = {}) {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: action, ...data })
+        });
+        return await response.json();
+    }
+    
+    function maskName(name) {
+        if (!name) return '';
+        var n = name.trim();
+        if (n.length <= 2) return n;
+        return n.charAt(0) + 'O' + n.charAt(n.length - 1);
+    }
+    
+    function showMsg(id, msg, type) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.className = 'message ' + type;
+            el.innerText = msg;
+            el.style.display = 'block';
+            setTimeout(function() { if (el) el.style.display = 'none'; }, 3000);
+        }
+    }
+    
+    function showSuccessModal(message) {
+        alert(message);
+    }
+    
+    async function loadGroups() {
+        try {
+            const groups = await callAPI('getGroupsList');
+            var allGroups = ['全部'].concat(groups);
+            var ids = ['leaderGroupAdd', 'editGroupSelect', 'editGroupNew', 'leaderUploadGroup', 'listGroupSelect', 'statsGroupSelect'];
+            ids.forEach(function(id) {
+                var sel = document.getElementById(id);
+                if (sel) {
+                    sel.innerHTML = '<option value="">請選擇組別</option>';
+                    allGroups.forEach(function(g) { sel.innerHTML += '<option value="' + g + '">' + g + '</option>'; });
+                }
+            });
+        } catch(e) { console.error('載入組別失敗:', e); }
+    }
+    
+    // 組長登入
+    var pwd
