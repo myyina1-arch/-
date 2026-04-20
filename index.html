@@ -228,7 +228,7 @@
     // ========================================
     // 🔥 您的 Web App 網址（請改成您的）
     // ========================================
-    const API_URL = 'https://script.google.com/macros/s/AKfycby2eZf2t9OjwMRrlApYzHMTI8jO51z8r3KYu-BAWPahayqi-XhpG_AUhKoeyY5z7uhm/exec';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwFo9FVStpLNZ20BQyyEeOEqPyS2uEvIMnrOobLcercMHeu5ifePn_UdkR_sk98IWKI/exec';
     
     var currentUser = null;
     var currentLeader = null;
@@ -241,7 +241,6 @@
     async function callAPI(action, data = {}) {
         const response = await fetch(API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: action, ...data })
         });
         return await response.json();
