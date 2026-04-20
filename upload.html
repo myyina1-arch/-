@@ -24,23 +24,29 @@
         .hero-header { background: #1e293b; color: white; padding: 24px 20px; text-align: center; }
         .hero-header h1 { margin: 0; font-size: 1.8rem; font-weight: 700; }
         .hero-header p { margin: 6px 0 0; opacity: 0.8; font-size: 0.85rem; }
-        .nav-links { display: flex; background: #f1f5f9; padding: 8px; gap: 8px; }
-        .nav-link { flex: 1; text-align: center; padding: 10px; background: #e2e8f0; border-radius: 30px; text-decoration: none; color: #334155; font-weight: 600; font-size: 14px; }
-        .nav-link.active { background: #f97316; color: white; }
         .tab-pane { padding: 24px 22px; background: white; }
         .form-row { margin-bottom: 20px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; color: #0f172a; font-size: 0.9rem; }
-        input, select { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; }
-        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; }
+        label .required { color: #e53e3e; margin-left: 4px; }
+        input, select { width: 100%; padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-size: 0.95rem; transition: all 0.3s; }
+        input:focus, select:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,0.1); }
+        input.error, select.error { border-color: #e53e3e; background-color: #fff5f5; }
+        button { width: 100%; padding: 12px; background: #f97316; border: none; border-radius: 40px; font-weight: bold; font-size: 1rem; color: white; cursor: pointer; margin-top: 6px; transition: all 0.3s; }
+        button:hover { background: #e0650c; transform: translateY(-1px); }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
         button.secondary { background: #475569; }
+        button.secondary:hover { background: #334155; }
         .message { margin-top: 16px; padding: 12px; border-radius: 40px; text-align: center; font-size: 0.85rem; display: none; }
         .message.success { background: #dcfce7; color: #15803d; display: block; }
         .message.error { background: #fee2e2; color: #b91c1c; display: block; }
+        .message.warning { background: #fef3c7; color: #92400e; display: block; }
         .info-card { background: #fef9e8; border-left: 5px solid #f97316; padding: 14px; border-radius: 24px; margin-bottom: 20px; }
         .warning-badge { background: #ffedd5; color: #9a3412; padding: 10px; border-radius: 30px; text-align: center; font-weight: bold; margin-bottom: 16px; display: none; }
         .history-item { font-size: 0.8rem; background: #fff7ed; margin: 6px 0; padding: 8px 12px; border-radius: 40px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
         .history-time { font-size: 0.7rem; color: #8d6e63; background: #f0e4c6; padding: 2px 8px; border-radius: 20px; }
         footer { text-align: center; font-size: 11px; padding: 14px; color: #94a3b8; background: #f8fafc; }
+        .loading-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff; border-radius: 50%; border-top-color: transparent; animation: spin 0.6s linear infinite; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -49,22 +55,51 @@
         <h1>📤 上傳數字表</h1>
         <p>請輸入會員編號上傳數字</p>
     </div>
-    <div class="nav-links">
-        <a href="upload.html" class="nav-link active">📤 上傳數字</a>
-            </div>
     <div class="tab-pane">
-        <div class="form-row"><label>📋 組別</label><select id="userGroupSelect"><option value="">請選擇組別</option></select></div>
-        <div class="form-row"><label>🔢 會員編號</label><input type="text" id="userMemberNo" placeholder="請輸入會員編號"></div>
+        <!-- 組別選擇 -->
+        <div class="form-row">
+            <label>📋 組別 <span class="required">*</span></label>
+            <select id="userGroupSelect">
+                <option value="">請選擇組別</option>
+            </select>
+            <div class="error-hint" style="font-size:12px; color:#e53e3e; margin-top:4px; display:none;">請選擇組別</div>
+        </div>
+        
+        <!-- 會員編號 -->
+        <div class="form-row">
+            <label>🔢 會員編號 <span class="required">*</span></label>
+            <input type="text" id="userMemberNo" placeholder="請輸入會員編號" autocomplete="off">
+            <div class="error-hint" style="font-size:12px; color:#e53e3e; margin-top:4px; display:none;">請輸入會員編號</div>
+        </div>
+        
+        <!-- 會員資訊顯示區 -->
         <div id="userMemberInfo" style="display:none;" class="info-card">
             <div><strong>📌 會員姓名：</strong> <span id="showMemberName">-</span></div>
             <div><strong>📊 已上傳次數：</strong> <span id="uploadCountSpan">0</span> / 5</div>
             <div id="historyArea"></div>
         </div>
+        
+        <!-- 上限警告 -->
         <div id="userLimitWarning" class="warning-badge">⚠️ 本月已達5次上傳上限！</div>
-        <div class="form-row"><label>💰 上傳數字</label><input type="number" id="userAmount" placeholder="請輸入數字"></div>
-        <div class="form-row"><label>📝 備註</label><input type="text" id="userRemark" placeholder="備註說明"></div>
-        <button id="userCheckBtn" class="secondary">🔍 查詢</button>
+        
+        <!-- 上傳數字 -->
+        <div class="form-row">
+            <label>💰 上傳數字 <span class="required">*</span></label>
+            <input type="number" id="userAmount" placeholder="請輸入數字（限正整數）" step="1" min="1">
+            <div class="error-hint" style="font-size:12px; color:#e53e3e; margin-top:4px; display:none;">請輸入有效的正整數（至少1元以上）</div>
+        </div>
+        
+        <!-- 備註 -->
+        <div class="form-row">
+            <label>📝 備註</label>
+            <input type="text" id="userRemark" placeholder="備註說明（選填）" maxlength="100">
+        </div>
+        
+        <!-- 按鈕區 -->
+        <button id="userCheckBtn" class="secondary">🔍 查詢會員</button>
         <button id="userUploadBtn" disabled>📤 確認上傳</button>
+        
+        <!-- 訊息顯示區 -->
         <div id="userUploadMsg" class="message"></div>
     </div>
     <footer>© 會員上傳系統</footer>
@@ -75,9 +110,84 @@
     
     var currentUser = null;
     
+    // 清除所有錯誤提示
+    function clearErrors() {
+        document.querySelectorAll('.error-hint').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('input, select').forEach(el => el.classList.remove('error'));
+    }
+    
+    // 顯示特定欄位錯誤
+    function showFieldError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = field.parentElement.querySelector('.error-hint');
+        if (field) field.classList.add('error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+    
+    // 驗證表單（查詢前）
+    function validateQueryForm() {
+        clearErrors();
+        let isValid = true;
+        
+        const group = document.getElementById('userGroupSelect').value;
+        if (!group) {
+            showFieldError('userGroupSelect', '請選擇組別');
+            isValid = false;
+        }
+        
+        const memberNo = document.getElementById('userMemberNo').value.trim();
+        if (!memberNo) {
+            showFieldError('userMemberNo', '請輸入會員編號');
+            isValid = false;
+        } else if (!/^\d{4,10}$/.test(memberNo)) {
+            showFieldError('userMemberNo', '會員編號格式錯誤（需4-10位數字）');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
+    // 驗證上傳表單
+    function validateUploadForm() {
+        clearErrors();
+        let isValid = true;
+        
+        if (!currentUser) {
+            showMsg('userUploadMsg', '請先查詢會員資料', 'error');
+            return false;
+        }
+        
+        const amount = document.getElementById('userAmount').value;
+        if (!amount || amount === '') {
+            showFieldError('userAmount', '請輸入上傳數字');
+            isValid = false;
+        } else {
+            const numAmount = parseFloat(amount);
+            if (isNaN(numAmount)) {
+                showFieldError('userAmount', '請輸入有效的數字');
+                isValid = false;
+            } else if (numAmount <= 0) {
+                showFieldError('userAmount', '數字必須大於0');
+                isValid = false;
+            } else if (!Number.isInteger(numAmount)) {
+                showFieldError('userAmount', '請輸入整數（不能有小數點）');
+                isValid = false;
+            } else if (numAmount > 99999999) {
+                showFieldError('userAmount', '數字過大（最多8位數）');
+                isValid = false;
+            }
+        }
+        
+        return isValid;
+    }
+    
     async function callAPI(action, data = {}) {
         const response = await fetch(API_URL, {
             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: action, ...data })
         });
         return await response.json();
@@ -96,27 +206,37 @@
             el.className = 'message ' + type;
             el.innerText = msg;
             el.style.display = 'block';
-            setTimeout(function() { if (el) el.style.display = 'none'; }, 3000);
+            setTimeout(function() { if (el) el.style.display = 'none'; }, 4000);
         }
     }
     
     async function loadGroups() {
         try {
             const groups = await callAPI('getGroupsList');
-            var allGroups = ['全部'].concat(groups);
+            var allGroups = groups;
             var sel = document.getElementById('userGroupSelect');
             if (sel) {
                 sel.innerHTML = '<option value="">請選擇組別</option>';
                 allGroups.forEach(function(g) { sel.innerHTML += '<option value="' + g + '">' + g + '</option>'; });
             }
-        } catch(e) { console.error('載入組別失敗:', e); }
+        } catch(e) { 
+            console.error('載入組別失敗:', e);
+            showMsg('userUploadMsg', '載入組別失敗，請重新整理頁面', 'error');
+        }
     }
     
+    // 查詢會員
     document.getElementById('userCheckBtn').onclick = async function() {
+        if (!validateQueryForm()) return;
+        
         var group = document.getElementById('userGroupSelect').value;
         var no = document.getElementById('userMemberNo').value.trim();
-        if (!group) { showMsg('userUploadMsg', '請選擇組別', 'error'); return; }
-        if (!no) { showMsg('userUploadMsg', '請輸入會員編號', 'error'); return; }
+        
+        const btn = this;
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = '⏳ 查詢中...';
+        
         try {
             const r = await callAPI('getMemberInfoForForm', { memberNo: no, groupName: group });
             if (r.success) {
@@ -130,42 +250,112 @@
                     for (var i = 0; i < r.uploadInfo.history.length; i++) {
                         var h = r.uploadInfo.history[i];
                         var timeStr = h.date ? h.date : '時間未記錄';
-                        html += '<div class="history-item"><span>📌 第 ' + h.number + ' 次：數字 ' + h.amount + '</span><span class="history-time">🕘 ' + timeStr + '</span></div>';
+                        html += '<div class="history-item"><span>📌 第 ' + h.number + ' 次：數字 ' + h.amount.toLocaleString() + '</span><span class="history-time">🕘 ' + timeStr + '</span></div>';
                     }
                 } else { html += '<div>無紀錄</div>'; }
                 document.getElementById('historyArea').innerHTML = html;
                 var full = cnt >= 5;
                 document.getElementById('userLimitWarning').style.display = full ? 'block' : 'none';
                 document.getElementById('userUploadBtn').disabled = full;
+                
+                if (full) {
+                    showMsg('userUploadMsg', '⚠️ 該會員本月已達5次上傳上限，無法繼續上傳', 'warning');
+                } else {
+                    showMsg('userUploadMsg', '✅ 會員驗證成功，請輸入數字後上傳', 'success');
+                }
             } else {
                 document.getElementById('userMemberInfo').style.display = 'none';
+                document.getElementById('userUploadBtn').disabled = true;
                 showMsg('userUploadMsg', r.message, 'error');
+                currentUser = null;
             }
-        } catch(err) { showMsg('userUploadMsg', '查詢失敗：' + err.message, 'error'); }
+        } catch(err) { 
+            showMsg('userUploadMsg', '查詢失敗：' + err.message, 'error');
+            currentUser = null;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     };
     
+    // 上傳數字
     document.getElementById('userUploadBtn').onclick = async function() {
-        if (!currentUser) { showMsg('userUploadMsg', '請先查詢', 'error'); return; }
+        if (!validateUploadForm()) return;
+        
         var amount = parseFloat(document.getElementById('userAmount').value);
         var remark = document.getElementById('userRemark').value;
-        if (isNaN(amount) || amount <= 0) { showMsg('userUploadMsg', '請輸入有效數字', 'error'); return; }
         var no = document.getElementById('userMemberNo').value.trim();
+        
         const btn = this;
         const originalText = btn.innerText;
         btn.disabled = true;
-        btn.innerText = '⏳ 上傳中...';
+        btn.innerHTML = '<span class="loading-spinner"></span> 上傳中...';
+        
         try {
             const r = await callAPI('upload', { memberNo: no, memberName: currentUser.name, amount: amount, remark: remark });
             if (r.success) {
                 showMsg('userUploadMsg', r.message, 'success');
                 document.getElementById('userAmount').value = '';
                 document.getElementById('userRemark').value = '';
+                // 重新查詢更新狀態
                 document.getElementById('userCheckBtn').click();
-            } else { showMsg('userUploadMsg', r.message, 'error'); }
-        } catch(err) { showMsg('userUploadMsg', '上傳失敗：' + err.message, 'error'); }
-        finally { btn.disabled = false; btn.innerText = originalText; }
+            } else { 
+                showMsg('userUploadMsg', r.message, 'error'); 
+            }
+        } catch(err) { 
+            showMsg('userUploadMsg', '上傳失敗：' + err.message, 'error'); 
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     };
     
+    // 輸入框即時驗證（數字欄位）
+    document.getElementById('userAmount').addEventListener('input', function(e) {
+        const errorDiv = this.parentElement.querySelector('.error-hint');
+        if (this.value !== '') {
+            const num = parseFloat(this.value);
+            if (isNaN(num) || num <= 0) {
+                this.classList.add('error');
+                if (errorDiv) { errorDiv.textContent = '請輸入有效的正整數'; errorDiv.style.display = 'block'; }
+            } else if (!Number.isInteger(num)) {
+                this.classList.add('error');
+                if (errorDiv) { errorDiv.textContent = '請輸入整數（不能有小數點）'; errorDiv.style.display = 'block'; }
+            } else {
+                this.classList.remove('error');
+                if (errorDiv) errorDiv.style.display = 'none';
+            }
+        } else {
+            this.classList.remove('error');
+            if (errorDiv) errorDiv.style.display = 'none';
+        }
+    });
+    
+    // 會員編號即時驗證
+    document.getElementById('userMemberNo').addEventListener('input', function(e) {
+        const errorDiv = this.parentElement.querySelector('.error-hint');
+        if (this.value.trim() !== '' && !/^\d{4,10}$/.test(this.value.trim())) {
+            this.classList.add('error');
+            if (errorDiv) { errorDiv.textContent = '會員編號格式錯誤（需4-10位數字）'; errorDiv.style.display = 'block'; }
+        } else {
+            this.classList.remove('error');
+            if (errorDiv) errorDiv.style.display = 'none';
+        }
+    });
+    
+    // 組別選擇即時驗證
+    document.getElementById('userGroupSelect').addEventListener('change', function(e) {
+        const errorDiv = this.parentElement.querySelector('.error-hint');
+        if (this.value === '') {
+            this.classList.add('error');
+            if (errorDiv) errorDiv.style.display = 'block';
+        } else {
+            this.classList.remove('error');
+            if (errorDiv) errorDiv.style.display = 'none';
+        }
+    });
+    
+    // 頁面載入
     loadGroups();
 </script>
 </body>
